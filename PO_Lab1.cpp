@@ -1,20 +1,41 @@
-﻿// PO_Lab1.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
+﻿#include <iostream>
+#include <vector>
+#include <thread>
+#include <chrono>
+#include <iomanip>
+#include <Windows.h>
 
-#include <iostream>
+using namespace std;
 
-int main()
-{
-    std::cout << "Hello World!\n";
+
+void transpose_sequential(const vector<double>& A, vector<double>& B, int n) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            B[j * n + i] = A[i * n + j];
+        }
+    }
 }
 
-// Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
-// Отладка программы: F5 или меню "Отладка" > "Запустить отладку"
 
-// Советы по началу работы 
-//   1. В окне обозревателя решений можно добавлять файлы и управлять ими.
-//   2. В окне Team Explorer можно подключиться к системе управления версиями.
-//   3. В окне "Выходные данные" можно просматривать выходные данные сборки и другие сообщения.
-//   4. В окне "Список ошибок" можно просматривать ошибки.
-//   5. Последовательно выберите пункты меню "Проект" > "Добавить новый элемент", чтобы создать файлы кода, или "Проект" > "Добавить существующий элемент", чтобы добавить в проект существующие файлы кода.
-//   6. Чтобы снова открыть этот проект позже, выберите пункты меню "Файл" > "Открыть" > "Проект" и выберите SLN-файл.
+void transpose_range(const vector<double>& A, vector<double>& B, int n, int start_row, int end_row) {
+    for (int i = start_row; i < end_row; ++i) {
+        for (int j = 0; j < n; ++j) {
+            B[j * n + i] = A[i * n + j];
+        }
+    }
+}
+
+
+void transpose_parallel(const vector<double>& A, vector<double>& B, int n, int num_threads) {
+    vector<thread> threads;
+    int rows_per_thread = n / num_threads;
+
+    for (int i = 0; i < num_threads; ++i) {
+        int start = i * rows_per_thread;
+        int end = (i == num_threads - 1) ? n : (i + 1) * rows_per_thread;
+        threads.emplace_back(transpose_range, ref(A), ref(B), n, start, end);
+    }
+
+    for (auto& t : threads) t.join();
+}
+
