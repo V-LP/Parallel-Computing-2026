@@ -12,12 +12,12 @@
 
 using namespace std;
 
-// Структура для збору статистики
+// для збору статистики
 struct Stats {
     atomic<int> total_tasks{ 0 };
     atomic<int> rejected_tasks{ 0 };
     atomic<int> completed_tasks{ 0 };
-    atomic<long long> total_idle_ms{ 0 }; // Час очікування потоків
+    atomic<long long> total_idle_ms{ 0 }; 
 };
 
 class CustomThreadPool {
@@ -46,19 +46,18 @@ private:
                 unique_lock<mutex> lock(w->mtx);
                 w->idle_start = chrono::steady_clock::now();
 
-                // Чекаємо задачу або сигнал зупинки
+                // чекаємо задачу або сигнал зупинки
                 w->cv.wait(lock, [w, this] {
                     return (w->task != nullptr || w->stop || global_stop) && !paused;
                     });
 
                 if ((w->stop || global_stop) && w->task == nullptr) return;
 
-                // Розрахунок часу очікування (idle time)
                 auto idle_end = chrono::steady_clock::now();
                 stats.total_idle_ms += chrono::duration_cast<chrono::milliseconds>(idle_end - w->idle_start).count();
             }
 
-            // Виконання задачі
+            // виконання задачі
             if (w->task) {
                 w->task();
                 {
@@ -101,7 +100,7 @@ public:
         }
 
         stats.rejected_tasks++;
-        return false; // Всі зайняті - задача відкинута
+        return false; // всі зайняті = задача відкинута
     }
 
     void set_pause(bool p) {
@@ -115,7 +114,7 @@ public:
         for (auto w : workers) {
             {
                 lock_guard<mutex> lock(w->mtx);
-                if (!graceful) w->task = nullptr; // Моментальна зупинка
+                if (!graceful) w->task = nullptr; // зупинка
                 w->stop = true;
             }
             w->cv.notify_one();
@@ -129,8 +128,6 @@ public:
         if (!workers.empty()) stop(true);
     }
 };
-
-// --- ТЕСТУВАЛЬНА ЛОГІКА ---
 
 void simulated_task(int id) {
     random_device rd;
@@ -152,7 +149,7 @@ int main() {
     atomic<bool> producer_running{ true };
     atomic<int> task_id_counter{ 0 };
 
-    // Потік-продюсер (додає задачі з декількох потоків)
+    // продюсер 
     auto producer = [&](int producer_id) {
         random_device rd;
         mt19937 gen(rd());
@@ -175,7 +172,7 @@ int main() {
     vector<thread> producers;
     for (int i = 0; i < 3; ++i) producers.emplace_back(producer, i);
 
-    // Демонстрація паузи
+    // паузи
     this_thread::sleep_for(chrono::seconds(5));
     pool.set_pause(true);
     this_thread::sleep_for(chrono::seconds(3));
@@ -188,7 +185,7 @@ int main() {
     cout << "\nЗавершення роботи пулу (Graceful)..." << endl;
     pool.stop(true);
 
-    // Розрахунок статистики
+    // статистика
     cout << "\n--- СТАТИСТИКА ТЕСТУВАННЯ ---" << endl;
     cout << "Створено задач:     " << stats.total_tasks << endl;
     cout << "Відкинуто задач:    " << stats.rejected_tasks << endl;
